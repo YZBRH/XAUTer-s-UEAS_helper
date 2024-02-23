@@ -35,7 +35,8 @@ import xlrd  # 判断下载的xls表格内的数据有效性
 
 ### CryptoJS导入
 
-首先需要下载Node.js，进入官方网站https://nodejs.org/下载安装程序，然后双击安装程序跟随指引安装即可，建议下载到默认路径，否则您需要更改path.txt文件中的内容为您电脑中Node.js的路径
+首先需要下载Node.js，进入官方网站https://nodejs.org/
+下载安装程序，然后双击安装程序跟随指引安装即可，建议下载到默认路径，否则您需要更改path.txt文件中的内容为您电脑中Node.js的路径
 
 安装完成Node.js后，在cmd中使用以下命令安装CryptoJs
 
