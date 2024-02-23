@@ -17,12 +17,7 @@
 在cmd中使用以下命令快捷安装
 
 ```cmd
-pip install requests
-pip install beautifulsoup4
-pip install ddddocr
-pip install pyfiglet
-pip install PyExecJS
-pip install xlrd
+pip install -r requirements.txt
 ```
 
 以下是对各个模块在程序中作用的简短概括
@@ -71,7 +66,10 @@ python main.py
 ## 4.程序主体
 
 程序主逻辑图
-(ps:不知道为什么此处图片无法显示)(っ◞‸◟c)
+
+![](C:\Users\86156\Downloads\未命名文件.png)
+
+
 
 ## 5.各部分文件作用
 
@@ -86,6 +84,10 @@ python main.py
 ### conwork.js
 
 从教务系统中获取的前端加密代码，主要用于模拟教务系统登录过程中对密码部分进行加密的操作
+
+### requirements.txt
+
+python模块列表，用于快捷安装所需依赖库
 
 ### cookie.txt
 
@@ -106,8 +108,7 @@ Pwd_vpn=1234567890  # 表示您的WebVPN密码(将会加密存储在此处)
 User_jwxt=114514  # 表示您的教务系统账户
 Pwd_jwxt=1234567890  # 表示您的教务系统密码(将会加密存储在此处)
 Auto_ID=True  # 表示是否启用ddddocr的验证码自动识别功能，若为True则每次需要输入验证码时，将调用ddddocr自动识别
-Default_term=2023-2024-1  # 表示默认的学期选择，格式为xxxx-xxxx-x，两个年份代表学年，需要相邻，且后一个需大于前一个，最后
-							              一个数字表示上下学期，1表示上学期，2表示下学期
+Default_term=2023-2024-1  # 表示默认的学期选择，格式为xxxx-xxxx-x，两个年份代表学年，需要相邻，且后一个需大于前一个，最后							一个数字表示上下学期，1表示上学期，2表示下学期
 ```
 
 ### 教务系统验证码.jpg
