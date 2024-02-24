@@ -31,12 +31,12 @@ import os  # 执行一些系统命令，例如清屏cls
 import execjs  # 执行js代码
 import csv  # 生成csv表格
 import xlrd  # 判断下载的xls表格内的数据有效性
+import time  # 时间相关函数
 ```
 
 ### CryptoJS导入
 
-首先需要下载Node.js，进入官方网站https://nodejs.org/
-下载安装程序，然后双击安装程序跟随指引安装即可，建议下载到默认路径，否则您需要更改path.txt文件中的内容为您电脑中Node.js的路径
+首先需要下载Node.js，进入官方网站https://nodejs.org/下载安装程序，然后双击安装程序跟随指引安装即可，建议下载到默认路径，否则您需要更改path.txt文件中的内容为您电脑中Node.js的路径
 
 安装完成Node.js后，在cmd中使用以下命令安装CryptoJs
 
@@ -89,10 +89,6 @@ python main.py
 ### requirements.txt
 
 python模块列表，用于快捷安装所需依赖库
-
-### cookie.txt
-
-存储登录时的cookie，下次登陆时可直接使用已有cookie从而免登录直接进入系统
 
 ### path.txt
 
@@ -163,3 +159,9 @@ Default_term=2023-2024-1  # 表示默认的学期选择，格式为xxxx-xxxx-x�
 ## 8.关于
 
 本程序由 BR 独立编译完成，将永久开源，已上传至Github([YZBRH/XAUTer-s-UEAS_helper (github.com)](https://github.com/YZBRH/XAUTer-s-UEAS_helper))，觉得好玩好用记得来给我点个小星星啊(✧∇✧)，如有问题欢迎反馈，联系QQ：1947514592
+
+## 9.更新日志
+
+2024.02.23首版本发布
+
+2024.02.24优化登录流程，现在登录时会首先尝试直连，直连失败后再使用WebVPN进行连接

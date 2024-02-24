@@ -6,11 +6,12 @@ import os
 import execjs
 import csv
 import xlrd
+import time
 
 basedir = r"C:\Program Files\nodejs"  # node.js位置
 
-url_jwxt = "https://webvpn.xaut.edu.cn/http/77726476706e69737468656265737421fae04690692869456a468ca88d1b203b/jsxsd/"
-url_jwxt_main = url_jwxt + "framework/xsMainV.htmlx"
+url_jwxt_vpn = "https://webvpn.xaut.edu.cn/http/77726476706e69737468656265737421fae04690692869456a468ca88d1b203b/jsxsd/"
+url_jwxt = "http://jwgl.xaut.edu.cn/jsxsd/"
 # 目标网站
 
 KeepPwd = ""  # 保存密码
@@ -20,7 +21,6 @@ pwd_vpn = ""  # WebVPN密码
 user_jwxt = ""  # 教务系统账户
 pwd_jwxt = ""  # 教务系统密码
 default_term = ""  # 默认学期
-cookie = {"wengine_vpn_ticketwebvpn_xaut_edu_cn": ''}
 r_session = requests.session()  # 自动获取会话session，保持会话
 username = ""  # 记录用户名称
 
@@ -48,9 +48,7 @@ def crypt(msg, salt, mode):
 def vpn_login():
     global cookie, pwd_vpn
     url_vpn_login = "https://webvpn.xaut.edu.cn/https/77726476706e69737468656265737421f9f352d23f317d44300d8db9d6562d/authserver/login?service=https://webvpn.xaut.edu.cn/login?cas_login=true "
-    response = r_session.get(url_vpn_login, cookies=cookie)
-
-    cookie["wengine_vpn_ticketwebvpn_xaut_edu_cn"] = r_session.cookies.get("wengine_vpn_ticketwebvpn_xaut_edu_cn")
+    response = r_session.get(url_vpn_login)
 
     soup = BeautifulSoup(response.text, "html.parser")
     execution = soup.find(id="execution")["value"]
@@ -77,24 +75,29 @@ def vpn_login():
         "execution": execution
     }
     # 登录表单数据
-    r_session.post(url_vpn_login, cookies=cookie, data=form_data)
-    response = r_session.get("https://webvpn.xaut.edu.cn/", cookies=cookie)
+    r_session.post(url_vpn_login, data=form_data)
+    response = r_session.get("https://webvpn.xaut.edu.cn/")
     if response.url == "https://webvpn.xaut.edu.cn/":
         print("WebVPN登录成功！")
-        with open("./cookie.txt", "w") as fp:
-            fp.write(cookie["wengine_vpn_ticketwebvpn_xaut_edu_cn"])  # cookie更新并保存至本地
-
+        return
     else:
         print("WebVPN登陆失败，请检查账户与密码是否正确！")
         exit(0)
 
 
 # 获取教务系统登录验证码信息
-def get_check():
-    response = r_session.get(url_jwxt, cookies=cookie)
+def get_check(url):
+    response = r_session.get(url)
     soup = BeautifulSoup(response.text, "html.parser")
-    img_src = "https://webvpn.xaut.edu.cn" + soup.find(id="SafeCodeImg")["src"]
-    img_data = requests.get(img_src, cookies=cookie).content
+    img_src = ""
+    if url == url_jwxt_vpn:
+        img_src = "https://webvpn.xaut.edu.cn" + soup.find(id="SafeCodeImg")["src"]
+    elif url == url_jwxt:
+        img_src = "http://jwgl.xaut.edu.cn/jsxsd/verifycode.servlet"
+    else:
+        print("未知网站！")
+        exit(0)
+    img_data = r_session.get(img_src).content
     # 保存验证码至本地
     with open('./教务系统验证码.jpg', 'wb') as fp:
         fp.write(img_data)
@@ -111,9 +114,10 @@ def get_check():
 
 
 # 教务系统登录
-def jwxt_login():
+def jwxt_login(url):
     global pwd_jwxt
-    url_jwxt_login = url_jwxt + "xk/LoginToXk"  # 教务系统登录接口
+    url_jwxt_login = url + "xk/LoginToXk"  # 教务系统登录接口
+    url_jwxt_main = url + "framework/xsMainV.htmlx"  # 主页
 
     if KeepPwd == "False":  # 未保存密码
         while True:
@@ -126,7 +130,7 @@ def jwxt_login():
     encoded = str(encode(user_jwxt)) + "%%%" + str(encode(pwd_jwxt))
     # encoded数据，实际上采用base64编码，但此处选择调用conwork.js中的加密函数
 
-    check = get_check()
+    check = get_check(url)
     # 获取验证码相关信息
 
     form_data = {
@@ -137,10 +141,9 @@ def jwxt_login():
     }
     # 登录表单数据
 
-    r_session.post(url_jwxt_login, cookies=cookie, data=form_data)
-    response = r_session.get(url_jwxt_main, cookies=cookie)
+    r_session.post(url_jwxt_login, data=form_data)
+    response = r_session.get(url_jwxt_main)
     # 登录数据POST发送至./xk/LoginToXk接口，从./framework/xsMainV.htmlx接口进行个人主页信息GET获取
-
     if response.status_code == 200 and response.url == url_jwxt_main:
         # 登录成功
         print("教务系统登录成功！")
@@ -150,12 +153,12 @@ def jwxt_login():
 
 
 # 成绩查询
-def query_grades(term):
+def query_grades(url, term):
     kksj = term  # 开课时间，即查询的时段
     zylx = "0"
 
-    url_jwxt_cj_cx = url_jwxt + "kscj/cjcx_list?" + "kksj=" + kksj + "&" + "zylx=" + zylx  # 成绩查询网址
-    response = r_session.get(url_jwxt_cj_cx, cookies=cookie)
+    url_jwxt_cj_cx = url + "kscj/cjcx_list?" + "kksj=" + kksj + "&" + "zylx=" + zylx  # 成绩查询网址
+    response = r_session.get(url_jwxt_cj_cx)
     soup = BeautifulSoup(response.text, "html.parser")
 
     table = soup.find('table', {'id': 'dataList'})  # 使用ID定位表格
@@ -203,11 +206,11 @@ def query_grades(term):
 
 
 # 个人信息查询
-def person_data():
+def person_data(url):
     print("查询中......")
-    print("====================")
-    url_person_data = url_jwxt + "yxszzy/yxszzy_grxx_ck"
-    response = r_session.get(url_person_data, cookies=cookie)
+    print("============================")
+    url_person_data = url + "yxszzy/yxszzy_grxx_ck"
+    response = r_session.get(url_person_data)
     tds = BeautifulSoup(response.text, "html.parser").find_all("td")
     print(tds[1].get_text())
     print(tds[2].get_text())
@@ -216,19 +219,19 @@ def person_data():
     print(tds[6].get_text())
     print(tds[7].get_text())
     print(tds[8].get_text())
-    print("====================")
+    print("============================")
     print("查询完毕")
 
 
 # 学期课表导出
-def get_curriculum(term):
+def get_curriculum(url, term):
     xnxq01id = term  # 目标学期
     zc = ""
     kbjcmsid = "47A852EDE04746E8913E2D79DBCEBB7F"
     wkbkc = '1'
     xswk = '1'
-    url_curriculum = url_jwxt + "xskb/xskb_print.do?" + "xnxq01id=" + xnxq01id + "&" + "zc=" + zc + "&" + "kbjcmsid=" + kbjcmsid + "&" + "wkbkc=" + wkbkc + "&" + "xswk=" + xswk
-    response = r_session.post(url_curriculum, cookies=cookie)
+    url_curriculum = url + "xskb/xskb_print.do?" + "xnxq01id=" + xnxq01id + "&" + "zc=" + zc + "&" + "kbjcmsid=" + kbjcmsid + "&" + "wkbkc=" + wkbkc + "&" + "xswk=" + xswk
+    response = r_session.post(url_curriculum)
     with open("./个人学期课表tmp.xls", "wb") as fp:
         fp.write(response.content)
     try:
@@ -245,13 +248,13 @@ def get_curriculum(term):
 
 
 # 考试安排信息查询
-def query_exam(term):
-    url_exam = url_jwxt + "xsks/xsksap_list"
+def query_exam(url, term):
+    url_exam = url + "xsks/xsksap_list"
     form_data = {
         "xqlbmc": "",
         "xnxqid": term
     }
-    response = r_session.post(url_exam, cookies=cookie, data=form_data)
+    response = r_session.post(url_exam, data=form_data)
     soup = BeautifulSoup(response.text, "html.parser")
     table = soup.find("table", {"id": "dataList"})
     exam_list = []
@@ -292,8 +295,8 @@ def query_exam(term):
 
 
 # 教材信息查询
-def query_textbook(term):
-    url_textbook = url_jwxt + "nxsjc/xsjcqr"
+def query_textbook(url, term):
+    url_textbook = url + "nxsjc/xsjcqr"
     form_data = {
         "xnxqid": term,
         "kkyx": '',
@@ -301,14 +304,14 @@ def query_textbook(term):
         "skjs": '',
         "xxdm": "10700"
     }
-    response = r_session.post(url_textbook, cookies=cookie, data=form_data)
+    response = r_session.post(url_textbook, data=form_data)
     soup = BeautifulSoup(response.text, "html.parser")
     table = soup.find(class_="layui-table")
     textbook_list = []
     if table is not None:
         flag = 0  # 标记是不是第一行表头
         i = 0  # 统计数量
-        money = 0 # 记录总金额
+        money = 0  # 记录总金额
         table_rows = table.find_all('tr')  # 存放所有的tr标签数据
         for row in table_rows:
             if flag == 0:
@@ -358,12 +361,12 @@ def get_csv(data_list, term, name):
 def init():
     global user_vpn, pwd_vpn, user_jwxt, pwd_jwxt, KeepPwd, Auto_ID, default_term, cookie, basedir
     logo = pyfiglet.figlet_format("by  B R")
-    print("=============================")
+    print("============================")
     print(logo)
-    print("=============================")
+    print("============================")
     print("欢迎使用XAUTer's UEAS_helper！")
     print("在正式使用前请务必仔细阅读README.md文件！")
-    print("=============================")
+    print("============================")
     if os.path.isfile("./path.txt"):
         # 有路径文件
         with open("./path.txt", "r") as path:
@@ -380,10 +383,6 @@ def init():
             pwd_jwxt = crypt(init_list[4][9::].strip(), "PF5GE4TI", 1)
             Auto_ID = init_list[5][8::].strip()
             default_term = init_list[6][13::].strip()
-        if os.path.isfile("./cookie.txt"):
-            with open("./cookie.txt", "r") as fp:
-                cookie["wengine_vpn_ticketwebvpn_xaut_edu_cn"] = fp.read().strip()
-        print("配置文件读取完成！")
     else:
         # 无配置文件
         print("未检测到配置文件，请先进行基础配置！")
@@ -459,76 +458,76 @@ def init_updata():
             print("保存成功！")
             break
     fp.close()
-    # cookie设置()
-    while True:
-        inspect = input("使用已有的cookie?(没有请输入n)(y/n)=>")
-        if inspect == 'Y' or inspect == 'y' or inspect == 'N' or inspect == 'n':
-            if inspect == 'Y' or inspect == 'y':
-                cookie = input("输入你的cookie=>")
-                with open("./cookie.txt", "w") as f:
-                    f.write(cookie)
-            break
-
+    time.sleep(1)
+    os.system("cls")
 
 # 主菜单
 def main_mune():
     while True:
-        print("====================")
+        print("============================")
         print("\t1.个 人 成 绩")
         print("\t2.个人信息查询")
         print("\t3.学 期 课 表")
         print("\t4.考试安排信息")
         print("\t5.教材征订信息")
         print("\t0.退 出 程 序")
-        print("====================")
+        print("============================")
         select = input(":=>")
         if '0' <= select <= '5':
             return select
 
 
 if __name__ == "__main__":
+    url_goal = ""
     init()
-    response = r_session.get(url_jwxt, cookies=cookie)
+    response = r_session.get(url_jwxt)
     if response.status_code != 200:
-        # 服务器异常
-        print(f"系统服务器暂无法正常访问,状态码为{response.status_code}，本次访问网站为{response.url}")
-        exit(0)
-    else:
-        # 服务器正常
-        print("系统服务器访问成功！")
-        if response.url != url_jwxt:
-            vpn_login()
+        # 教务系统服务器直连异常
+        print("教务系统服务器直连失败，尝试通过WebVPN连接！")
 
-        # Web已成功访问教务系统
-        response = r_session.get(url_jwxt_main, cookies=cookie)
-        if response.status_code == 200 and response.url == url_jwxt_main:
-            # 成功进入教务系统
-            print("教务系统登录成功！")
+        response = r_session.get(url_jwxt_vpn)
+        if response.status_code == 200:
+            print("WebVPN服务器连接成功！")
+            url_goal = url_jwxt_vpn
+            if response.url != url_jwxt_vpn:
+                vpn_login()
         else:
-            # 未能登录教务系统
-            jwxt_login()
+            print("服务器炸了，连接失败！")
+            exit(0)
+    else:
+        # 教务系统服务器直连正常
+        url_goal = url_jwxt
 
-        while True:
-            response = r_session.get(url_jwxt_main, cookies=cookie)
-            username = BeautifulSoup(response.text, "html.parser").find_all("li")[2].find_all("span")[
+    url_jwxt_main = url_goal + "framework/xsMainV.htmlx"
+    response = r_session.get(url_jwxt_main)
+    if response.status_code == 200 and response.url == url_jwxt_main:
+        # 成功进入教务系统
+        print("教务系统登录成功！")
+    else:
+        # 未能登录教务系统
+        jwxt_login(url_goal)
+
+    while True:
+        response = r_session.get(url_jwxt_main)
+        username = BeautifulSoup(response.text, "html.parser").find_all("li")[2].find_all("span")[
                 1].get_text().strip()
-            print("====================")
-            print(f"你好！【{username}】,欢迎使用XAUTer's UEAS_helper！")
-            select = main_mune()
-            os.system("cls")  # 清下屏
-            if select == '0':  # 退出程序
-                print("感谢您的使用！期待下次再会！")
-                exit(0)
-            elif select == '1':  # 个人成绩导出
-                get_csv(query_grades(default_term), default_term, "个人成绩单")
-            elif select == '2':  # 个人信息查询
-                person_data()
-            elif select == '3':  # 学期理论课表导出
-                get_curriculum(default_term)
-            elif select == '4':  # 考试安排信息导出
-                get_csv(query_exam(default_term), default_term, "考试安排信息")
-            elif select == '5':  # 教材信息导出
-                get_csv(query_textbook(default_term), default_term, "教材信息")
-            else:
-                print("发生未知错误!")
-                exit(0)
+        print("============================")
+        print(f"你好！【{username}】,欢迎使用XAUTer's UEAS_helper！")
+        select = main_mune()
+        os.system("cls")  # 清下屏
+        if select == '0':  # 退出程序
+            print("感谢您的使用！期待下次再会！")
+            exit(0)
+        elif select == '1':  # 个人成绩导出
+            get_csv(query_grades(url_goal, default_term), default_term, "个人成绩单")
+        elif select == '2':  # 个人信息查询
+            person_data(url_goal)
+        elif select == '3':  # 学期理论课表导出
+            get_curriculum(url_goal, default_term)
+        elif select == '4':  # 考试安排信息导出
+            get_csv(query_exam(url_goal, default_term), default_term, "考试安排信息")
+        elif select == '5':  # 教材信息导出
+            get_csv(query_textbook(url_goal, default_term), default_term, "教材信息")
+        else:
+            print("发生未知错误!")
+            exit(0)
