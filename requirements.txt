@@ -1,6 +1,7 @@
-requests==2.31.0
-beautifulsoup4==4.12.3
-ddddocr==1.4.11
-pyfiglet==1.0.2
-PyExecJS==1.5.1
-xlrd==2.0.1
+requests>=2.31.0
+beautifulsoup4>=4.12.3
+ddddocr>=1.4.11
+PyExecJS>=1.5.1
+xlrd>=2.0.1
+bs4>=0.0.2
+stdiomask>=0.0.6
