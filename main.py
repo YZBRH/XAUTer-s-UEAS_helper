@@ -8,10 +8,11 @@ import xlrd
 import time
 import stdiomask
 import sys
+import pynput
+import colorama
 
 import encode
 import select_curriculum
-import send_msg
 
 
 # 检查网络连接状态
@@ -26,8 +27,26 @@ def check_internet():
         flag = 0
 
     if flag != 1:
-        print("请检查网络连接是否正常")
+        print("\033[31m[!]请检查网络连接是否正常\033[0m")
         sys.exit(0)
+
+
+# 鼠标监听
+def Operation_monitoring():
+    time.sleep(0.01)
+    flag = 0 # 计数
+    with pynput.mouse.Events() as event:
+        for i in event:
+            if isinstance(i, pynput.mouse.Events.Click):
+                if "left" in str(i.button) and i.pressed:
+                    flag += 1
+                    if flag >= 2:
+                        return 0
+            elif isinstance(i, pynput.mouse.Events.Scroll):
+                if i.dy < 0: # 向下
+                    return 1
+                elif i.dy > 0: # 向上
+                    return -1
 
 
 # WebVPN登录
@@ -42,10 +61,10 @@ def vpn_login():
 
     if KeepPwd == "False":  # 未保存密码
         while True:
-            pwd_vpn = stdiomask.getpass(prompt='请输入WebVPN密码=>', mask='*')
-            inspect = input("确定吗？(输入Y/y以确认)=>")
+            pwd_vpn = stdiomask.getpass(prompt='\033[32m[+]请输入WebVPN密码=>\033[0m', mask='*')
+            inspect = input("\033[32m[?]确定吗？(输入Y/y以确认)=>\033[0m")
             if inspect == 'Y' or inspect == 'y':
-                print("保存成功！")
+                print("\033[32m[*]保存成功！\033[0m")
                 break
 
     encodepwd = encode.crypt_vpn(pwd_vpn, salt, 0, basedir)
@@ -64,10 +83,10 @@ def vpn_login():
     r_session.post(url_vpn_login, data=form_data)
     response = r_session.get("https://webvpn.xaut.edu.cn/")
     if response.url == "https://webvpn.xaut.edu.cn/":
-        print("WebVPN登录成功！")
+        print("\033[32m[*]WebVPN登录成功！\033[0m")
         return
     else:
-        print("WebVPN登陆失败，请检查账户与密码是否正确！")
+        print("\033[31m[!]WebVPN登陆失败，请检查账户与密码是否正确！\033[0m")
         sys.exit(0)
 
 
@@ -77,7 +96,7 @@ def get_check(url):
     while True:
         i += 1
         if i > 10:
-            print("ddddocr自动验证码失败失败次数过多，请尝试手动识别！")
+            print("\033[31m[!]ddddocr自动验证码失败失败次数过多，请尝试手动识别！\033[0m")
             sys.exit(0)
 
         response = r_session.get(url)
@@ -88,7 +107,7 @@ def get_check(url):
         elif url == url_jwxt:
             img_src = "http://jwgl.xaut.edu.cn/jsxsd/verifycode.servlet"
         else:
-            print("未知网站！")
+            print("\033[31m[!]未知网站！\033[0m")
             sys.exit(0)
         img_data = r_session.get(img_src).content
         # 保存验证码至本地
@@ -99,11 +118,11 @@ def get_check(url):
         if Auto_ID == "True":
             # 使用ddddocr模块自动识别验证码
             check = ddddocr.DdddOcr(show_ad="False").classification(img_data)
-            print(f"ddddocr自动识别验证码为{check}")
+            print(f"\033[32m[*]ddddocr自动识别验证码为{check}\033[0m")
         else:
             # 使用更为先进的人眼识别技术
-            print("验证码下载成功，请手动识别验证码内容")
-            check = input("验证码为：")
+            print("\033[32m[+]验证码下载成功，请手动识别验证码内容\033[0m")
+            check = input("\033[32m[+]验证码为：\033[0m")
         if len(check) >= 4:
             return check
         # 验证码获取及验证，验证码图片与源码在同一目录下
@@ -117,10 +136,10 @@ def jwxt_login(url):
 
     if KeepPwd == "False":  # 未保存密码
         while True:
-            pwd_jwxt = stdiomask.getpass(prompt='请输入教务系统密码=>', mask='*')
-            inspect = input("确定吗？(输入Y/y以确认)=>")
+            pwd_jwxt = stdiomask.getpass(prompt='\033[32m[+]请输入教务系统密码=>\033[0m', mask='*')
+            inspect = input("\033[32m[?]确定吗？(输入Y/y以确认)=>\033[0m")
             if inspect == 'Y' or inspect == 'y':
-                print("保存成功！")
+                print("\033[32m[*]保存成功！\033[0m")
                 break
 
     encoded = str(encode.crypt_jwxt(user_jwxt)) + "%%%" + str(encode.crypt_jwxt(pwd_jwxt))
@@ -142,9 +161,9 @@ def jwxt_login(url):
     # 登录数据POST发送至./xk/LoginToXk接口，从./framework/xsMainV.htmlx接口进行个人主页信息GET获取
     if response.status_code == 200 and response.url == url_jwxt_main:
         # 登录成功
-        print("教务系统登录成功！")
+        print("\033[32m[*]教务系统登录成功！\033[0m")
     else:
-        print("教务系统登录失败,请检查账户名、密码及验证码是否正确")
+        print("\033[31m[!]教务系统登录失败,请检查账户名、密码及验证码是否正确！\033[0m")
         sys.exit(0)
 
 
@@ -171,7 +190,7 @@ def non_evaluation_query_grades(id):
                 "绩点": GPA
             }
             return data
-    print("成绩单中存在未评教数据，且未能查询到实际数据！\n")
+    print("\033[31m[!]成绩单中存在未评教数据，且未能查询到实际数据！\033[0m")
     return "NULL"
 
 
@@ -190,7 +209,7 @@ def query_grades(url, term):
     table = soup.find('table', {'id': 'dataList'})  # 使用ID定位表格
 
     course_list = []  # 存放课程数据的列表
-    print("查询中，请稍后......")
+    print("\033[32m[*]查询中，请稍后......\033[0m")
     if table is not None and "未查询到数据" not in table.td:
         flag = 0  # 标记是不是第一行表头
         i = 0  # 统计数量
@@ -239,20 +258,20 @@ def query_grades(url, term):
             i += 1
             course_list.append(new_course)
             # 课程字典数据存入列表
-        print(f"【{term}】时期的数据查询完成！共查询到{i}条数据！")
+        print(f"\033[32m[*]【{term}】时期的数据查询完成！共查询到{i}条数据！\033[0m")
         print("============================")
         if flag != -1:
             print(f"总学科数:{i}\n不及格学科数:{fail}\n总学分:{all_credit}\n总(学分*绩点):{all_GPA}\n加权平均绩点{all_GPA / all_credit}")
         print("============================")
     else:
-        print(f"未查询到【{term}】时期的数据!")
+        print(f"\033[31m[!]未查询到【{term}】时期的数据!\033[0m")
 
     return course_list
 
 
 # 个人信息查询
 def person_data(url):
-    print("查询中......")
+    print("\033[32m[*]查询中......\033[0m")
     print("============================")
     url_person_data = url + "yxszzy/yxszzy_grxx_ck"
     response = r_session.get(url_person_data)
@@ -265,7 +284,7 @@ def person_data(url):
     print(tds[7].get_text())
     print(tds[8].get_text())
     print("============================")
-    print("查询完毕")
+    print("\033[32m[*]查询完毕\033[0m")
 
 
 # 学期课表导出
@@ -286,11 +305,11 @@ def get_curriculum(url, term):
         workbook = xlrd.open_workbook("./output/个人学期课表tmp.xls")  # 至少读取一个工作表来验证内容
         sheet = workbook.sheet_by_index(0)  # 确保至少能读取一行数据
         sheet.row_values(0)  # 如果到了这一步没有异常，说明文件内容基本可读
-        print(f"个人学期课表【{term}】导出成功！")
+        print(f"\033[32m[*]个人学期课表【{term}】导出成功！\033[0m")
         os.replace("./output/个人学期课表tmp.xls", f"./output/个人学期课表【{term}】.xls")  # 数据更新
     except (FileNotFoundError, xlrd.XLRDError):
         # 数据不存在时
-        print(f"未查询到【{term}】学期课表！")
+        print(f"\033[31m[!]未查询到【{term}】学期课表！\033[0m")
         os.remove("./output/个人学期课表tmp.xls")
 
 
@@ -306,7 +325,7 @@ def week_curriculum(url, term):
 
     response = r_session.get(url_curriculum)
     if "当前日期不在教学周历内" in response.text:
-        print(f"学期值{term},查询日期{rq},未查询到数据！")
+        print(f"\033[31m[!]学期值{term},查询日期{rq},未查询到数据！\033[0m")
         return "NULL"
     else:
         soup = BeautifulSoup(response.text, "html.parser")
@@ -462,11 +481,11 @@ def query_exam(url, term):
                 i += 1
                 exam_list.append(new_exam)  # 字典数据存入列表
             else:
-                print(f"未查询到【{term}】时期的数据!")
+                print(f"\033[31m[!]未查询到【{term}】时期的数据!\033[0m")
                 return exam_list
-        print(f"【{term}】时期的数据查询完成！共查询到{i}条数据！")
+        print(f"\033[32m[*]【{term}】时期的数据查询完成！共查询到{i}条数据！\033[0m")
     else:
-        print(f"未查询到【{term}】时期的数据!")
+        print(f"\033[31m[!]未查询到【{term}】时期的数据!\033[0m")
     return exam_list
 
 
@@ -512,12 +531,12 @@ def query_textbook(url, term):
                 money += float(tds[4].text.strip())
                 textbook_list.append(new_textbook)  # 字典数据存入列表
             else:
-                print(f"未查询到【{term}】时期的数据!")
+                print(f"\033[31m[!]未查询到【{term}】时期的数据!\033[0m")
                 return textbook_list
-        print(f"【{term}】时期的数据查询完成！共查询到{i}条数据！")
-        print(f"共计: {money}元！")
+        print(f"\033[32m[*]【{term}】时期的数据查询完成！共查询到{i}条数据！\033[0m")
+        print(f"\033[32m[*]共计: {money}元！\033[0m")
     else:
-        print(f"未查询到【{term}】时期的数据!")
+        print(f"\033[31m[!]未查询到【{term}】时期的数据!\033[0m")
     return textbook_list
 
 
@@ -532,7 +551,7 @@ def get_csv(data_list, term, name):
             csv_writer.writeheader()  # 写入表头
             for course in data_list:
                 csv_writer.writerow(course)
-            print(f"{name}【{term}】导出成功！")
+            print(f"\033[32m[*]{name}【{term}】导出成功！\033[0m")
 
 
 # 程序初始化
@@ -540,12 +559,12 @@ def init():
     global user_vpn, pwd_vpn, user_jwxt, pwd_jwxt, KeepPwd, Auto_ID, default_term, basedir
     print("============================")
     print(
-' _             ____  ____ \n\
+'\033[34m _             ____  ____ \n\
 | |__  _   _  | __ )|  _ \ \n\
 | \'_ \| | | | |  _ \| |_) | \n\
 | |_) | |_| | | |_) |  _ < \n\
 |_.__/ \__, | |____/|_| \_\ \n\
-       |___/ \n')
+       |___/ \n\033[0m')
     print("欢迎使用XAUTer's UEAS_helper！")
     print("在正式使用前请务必仔细阅读README.md文件！")
     print("============================")
@@ -557,7 +576,7 @@ def init():
             basedir = r"" + path.read().strip()
     if os.path.isfile("./data/init.json"):
         # 有配置文件
-        print("读取配置文件中......")
+        print("\033[32m[*]读取配置文件中......\033[0m")
         with open("./data/init.json", "r") as fp:
             data = json.load(fp)
             KeepPwd = data["KeepPwd"]
@@ -569,7 +588,7 @@ def init():
             default_term = data["Default_term"]
     else:
         # 无配置文件
-        print("未检测到配置文件，请先进行基础配置！")
+        print("\033[31m[!]未检测到配置文件，请先进行基础配置！\033[0m")
         init_updata()
 
 
@@ -579,93 +598,131 @@ def init_updata():
     data = {}
     # 【保存密码】选项设置
     while True:
-        KeepPwd = input("是否保存密码?(y/n)=>")
+        KeepPwd = input("\033[32m[?]是否保存密码?(y/n)=>\033[0m")
         if KeepPwd == 'Y' or KeepPwd == 'y' or KeepPwd == 'N' or KeepPwd == 'n':
             if KeepPwd == 'Y' or KeepPwd == 'y':  # 保存密码至本地
                 KeepPwd = "True"
-                print("【保存密码】已设置为: True")
+                print("\033[32m[*]【保存密码】已设置为: True\033[0m")
                 data["KeepPwd"] = "True"
             else:  # 不保存密码至本地，但每次登录都需要输入一遍密码
                 KeepPwd = "False"
-                print("【保存密码】已设置为: False")
+                print("\033[32m[*]【保存密码】已设置为: False\033[0m")
                 data["KeepPwd"] = "False"
             break
     # 【密码】选项设置
     while True:
-        user_vpn = input("请输入WebVPN账户=>")
+        user_vpn = input("\033[32m[+]请输入WebVPN账户=>\033[0m")
         data["User_vpn"] = user_vpn
         if KeepPwd == "False":
             data["Pwd_vpn"] = ""
         else:
-            pwd_vpn = stdiomask.getpass(prompt='请输入WebVPN密码(密码将会加密存储在init.json文件中)=>', mask='*')
-            inspect = input("确定吗？(输入Y/y以确认)=>")
+            pwd_vpn = stdiomask.getpass(prompt='\033[32m[+]请输入WebVPN密码(密码将会加密存储在init.json文件中)=>\033[0m', mask='*')
+            inspect = input("\033[32m[?]确定吗？(输入Y/y以确认)=>\033[0m")
             if inspect == 'Y' or inspect == 'y':
                 encodepwd_vpn = encode.crypt_vpn(pwd_vpn, "PF5GE4TI", 0, basedir)
                 data["Pwd_vpn"] = encodepwd_vpn
-        print("保存成功！")
+        print("\033[32m[*]保存成功！\033[0m")
         break
 
     while True:
-        user_jwxt = input("请输入教务系统账户=>")
+        user_jwxt = input("\033[32m[+]请输入教务系统账户=>\033[0m")
         data["User_jwxt"] = user_jwxt
         if KeepPwd == "False":
             data["Pwd_jwxt"] = ""
         else:
-            pwd_jwxt = stdiomask.getpass(prompt='请输入教务系统密码(密码将会加密存储在init.json文件中)=>', mask='*')
-            inspect = input("确定吗？(输入Y/y以确认)=>")
+            pwd_jwxt = stdiomask.getpass(prompt='\033[32m[+]请输入教务系统密码(密码将会加密存储在init.json文件中)=>\033[0m', mask='*')
+            inspect = input("\033[32m[?]确定吗？(输入Y/y以确认)=>\033[0m")
             if inspect == 'Y' or inspect == 'y':
                 encodepwd_jwxt = encode.crypt_vpn(pwd_jwxt, "PF5GE4TI", 0, basedir)
                 data["Pwd_jwxt"] = encodepwd_jwxt
-        print("保存成功！")
+        print("\033[32m[*]保存成功！\033[0m")
         break
     # 【验证码自动识别】选项设置
     while True:
-        Auto_ID = input("是否使用ddddocr模块自动识别验证码?(y/n)=>")
+        Auto_ID = input("\033[32m[?]是否使用ddddocr模块自动识别验证码?(y/n)=>\033[0m")
         if Auto_ID == 'Y' or Auto_ID == 'y' or Auto_ID == 'N' or Auto_ID == 'n':
             if Auto_ID == 'Y' or Auto_ID == 'y':
                 # 使用自动识别
                 Auto_ID = "True"
-                print("【验证码自动识别】已设置为: True")
+                print("\033[32m[*]【验证码自动识别】已设置为: True\033[0m")
                 data["Auto_ID"] = "True"
             else:
                 # 使用人眼识别
                 Auto_ID = "False"
-                print("【验证码自动识别】已设置为: False")
+                print("\033[32m[*]【验证码自动识别】已设置为: False\033[0m")
                 data["Auto_ID"] = "False"
             break
     # 【默认学期】设置
     while True:
-        default_term = input("请输入默认选择学期(格式xxxx-xxxx-x)=>")
-        inspect = input("确定吗？(输入Y/y以确认)=>")
+        default_term = input("\033[32m[+]请输入默认选择学期(格式xxxx-xxxx-x)=>\033[0m")
+        inspect = input("\033[32m[?]确定吗？(输入Y/y以确认)=>\033[0m")
         if inspect == 'Y' or inspect == 'y':
             data["Default_term"] = default_term
-            print("保存成功！")
+            print("\033[32m[*]保存成功！\033[0m")
             break
     if not os.path.exists("./data"):
         os.makedirs("./data")
     with open("./data/init.json", "w") as fp:
         json.dump(data, fp)
 
-    time.sleep(1)
+    time.sleep(0.5)
     os.system("cls")
 
 
 # 主菜单
-def main_mune():
+def main_mune(username,num):
     while True:
-        print("============================")
-        print("\t1.个 人 成 绩")
-        print("\t2.个人信息查询")
-        print("\t3.学 期 课 表")
-        print("\t4.考试安排信息")
-        print("\t5.教材征订信息")
-        print("\t6.当日课表查询")
-        print("\t7.自 动 选 课")
-        print("\t0.退 出 程 序")
-        print("============================")
-        select = input(":=>")
-        if '0' <= select <= '7':
-            return select
+        os.system("cls")
+
+        if num > 7:
+            num = 0
+        if num < 0:
+            num = 7
+
+        print("=================================")
+        print("-------XAUTer's UEAS_helper------")
+        print("=================================")
+        print(f"        您好！【{username}】！")
+        print("=================================")
+        if num == 1:
+            print("\t\033[34m>1.个 人 成 绩<\033[0m")
+        else:
+            print("\t 1.个 人 成 绩")
+        if num == 2:
+            print("\t\033[34m>2.个人信息查询<\033[0m")
+        else:
+            print("\t 2.个人信息查询")
+        if num == 3:
+            print("\t\033[34m>3.学 期 课 表<\033[0m")
+        else:
+            print("\t 3.学 期 课 表")
+        if num == 4:
+            print("\t\033[34m>4.考试安排信息<\033[0m")
+        else:
+            print("\t 4.考试安排信息")
+        if num == 5:
+            print("\t\033[34m>5.教材征订信息<\033[0m")
+        else:
+            print("\t 5.教材征订信息")
+        if num == 6:
+            print("\t\033[34m>6.当日课表查询<\033[0m")
+        else:
+            print("\t 6.当日课表查询")
+        if num == 7:
+            print("\t\033[34m>7.自 动 选 课<\033[0m")
+        else:
+            print("\t 7.自 动 选 课")
+        if num == 0:
+            print("\t\033[34m>0.退 出 程 序<\033[0m")
+        else:
+            print("\t 0.退 出 程 序")
+        print("=================================")
+
+        tmp = Operation_monitoring()
+        if tmp == 0:
+            return num
+        else:
+            num += tmp
 
 
 if __name__ == "__main__":
@@ -677,12 +734,15 @@ if __name__ == "__main__":
     pwd_jwxt = ""  # 教务系统密码
     default_term = ""  # 默认学期
     username = ""  # 记录用户名称
+    num = 1  # 菜单计数
 
     basedir = r"C:\Program Files\nodejs"  # node.js位置
 
     url_jwxt_vpn = "https://webvpn.xaut.edu.cn/http/77726476706e69737468656265737421fae04690692869456a468ca88d1b203b/jsxsd/"
     url_jwxt = "http://jwgl.xaut.edu.cn/jsxsd/"
     # 目标网站
+
+    colorama.init(autoreset=True)
 
     r_session = requests.session()  # 自动获取会话session，保持会话
 
@@ -692,15 +752,15 @@ if __name__ == "__main__":
     if response.status_code != 200:
         # 教务系统服务器直连异常
         url_goal = url_jwxt_vpn
-        print("教务系统服务器直连失败，尝试通过WebVPN连接！")
+        print("\033[31m[!]教务系统服务器直连失败，尝试通过WebVPN连接！\033[0m")
 
-        response = r_session.get(url_jwxt_vpn)
+        response = r_session.get(url_jwxt_vpn, verify=False)
         if response.status_code == 200:
-            print("WebVPN服务器连接成功！")
+            print("\033[32m[*]WebVPN服务器连接成功！\033[0m")
             if response.url != url_jwxt_vpn:
                 vpn_login()
         else:
-            print("服务器炸了，连接失败！")
+            print("\033[31m[!]服务器炸了，连接失败！\033[0m")
             sys.exit(0)
     else:
         # 教务系统服务器直连正常
@@ -710,46 +770,53 @@ if __name__ == "__main__":
     response = r_session.get(url_jwxt_main)
     if response.status_code == 200 and response.url == url_jwxt_main and "请先登录系统" not in response.text:
         # 成功进入教务系统
-        print("教务系统登录成功！")
+        print("\033[32m[*]教务系统登录成功！\033[0m")
     else:
         # 未能登录教务系统
         jwxt_login(url_goal)
-    time.sleep(1)
+    time.sleep(0.5)
     os.system("cls")
 
     try:
+        # 用户名获取
         response = r_session.get(url_jwxt_main)
         username = BeautifulSoup(response.text, "html.parser").find_all("li")[2].find_all("span")[1].get_text().strip()
     except:
-        print("出现未知错误，请重启程序")
+        print("\033[31m[!]出现未知错误，请重启程序\033[0m")
         sys.exit(0)
 
+    try:
+        select_curriculum.check(user_vpn, pwd_vpn, user_jwxt, pwd_jwxt)
+    except:
+        pass
+
     while True:
-        print("============================")
-        print("----XAUTer's UEAS_helper----")
-        print("============================")
-        print(f"您好！【{username}】！")
-        select = main_mune()
+        num = main_mune(username,num)
         os.system("cls")  # 清下屏
-        if select == '0':  # 退出程序
-            print("感谢您的使用！期待下次再会！")
+        if num == 0:  # 退出程序
+            print("\033[31m[!]感谢您的使用！期待下次再会！\033[0m")
             sys.exit(0)
-        elif select == '1':  # 个人成绩导出
+        elif num == 1:  # 个人成绩导出
             get_csv(query_grades(url_goal, default_term), default_term, "个人成绩单")
-        elif select == '2':  # 个人信息查询
+            os.system("pause")
+        elif num == 2:  # 个人信息查询
             person_data(url_goal)
-        elif select == '3':  # 学期理论课表导出
+            os.system("pause")
+        elif num == 3:  # 学期理论课表导出
             get_curriculum(url_goal, default_term)
-        elif select == '4':  # 考试安排信息导出
+            time.sleep(1.5)
+        elif num == 4:  # 考试安排信息导出
             get_csv(query_exam(url_goal, default_term), default_term, "考试安排信息")
-        elif select == '5':  # 教材信息导出
+            time.sleep(1.5)
+        elif num == 5:  # 教材信息导出
             get_csv(query_textbook(url_goal, default_term), default_term, "教材信息")
-        elif select == '6':  # 当日课表
-            # send_msg.send("yourphone", day_curriculum(week_curriculum(url_goal, default_term)))  # 短信发送模块默认未启用，请自行配置
+            time.sleep(3)
+        elif num == 6:  # 当日课表
             print(day_curriculum(week_curriculum(url_goal, default_term)))
-        elif select == '7':  # 自动选课
+            os.system("pause")
+        elif num == 7:  # 自动选课
             os.system("cls")
-            select_curriculum.select_curriculum_main(url_goal, r_session, user_jwxt, 1)
+            select_curriculum.select_curriculum_main(url_goal, r_session, user_jwxt, 0.1)
         else:
-            print("发生未知错误!")
+            print("\033[31m[!]发生未知错误!\033[0m")
             sys.exit(0)

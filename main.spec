@@ -1,14 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-conda_site_packages_path = os.path.abspath(r"C:\Users\86156\.conda\envs\tmp\Lib\site-packages")
-
 
 a = Analysis(
-    ['main.py', 'encode.py', 'send_msg.py', 'select_curriculum.py'],
-    datas=[('./onnxruntime_providers_shared.dll','onnxruntime\\capi'),('./common.onnx','ddddocr'),('./common_old.onnx','ddddocr')],
-    # pathex=[os.curdir, conda_site_packages_path],
+    ['main.py', 'encode.py', 'select_curriculum.py'],
     pathex=[],
     binaries=[],
+    datas=[('./onnxruntime_providers_shared.dll','onnxruntime\capi'),('./common_old.onnx','ddddocr')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -37,5 +34,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='helper-like.ico'
+    icon=['logo.ico'],
 )

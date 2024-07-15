@@ -5,3 +5,5 @@ PyExecJS>=1.5.1
 xlrd>=2.0.1
 bs4>=0.0.2
 stdiomask>=0.0.6
+pynput>=1.7.7
+colorama>=0.4.6
