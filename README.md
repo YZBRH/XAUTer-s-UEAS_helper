@@ -1,3 +1,5 @@
+该项目已停止维护，请移步至[XAUTer-s-Helper-GUI](https://github.com/YZBRH/XAUTer-s-Helper-GUI)
+
 # 前言
 
 ​	本程序一切数据来源于[教务系统](http://jwgl.xaut.edu.cn/jsxsd/)，如使用本程序得到的数据与官方网站不符，请以官方为准。
